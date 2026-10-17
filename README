@@ -1,0 +1,202 @@
+TERREBALANCE - VOLUMES ET TRANSPORT DES TERRES
+===========================================
+Application pedagogique pour etudiants en genie civil.
+Modele : fouilles rectangulaires, profondeur uniforme, parois verticales.
+Ce choix de geometrie n'est PAS une recommandation de chantier.
+Pas de verification de stabilite, portance, charge en masse, contraintes
+routieres, compactage ou tassement. Aucune certification reglementaire.
+
+FICHIERS
+app.py : interface, styles, schema, calculs et exports.
+requirement.text : bibliotheques ; README : ce guide.
+Le dossier livre contient uniquement ces trois fichiers. Tests, captures,
+archives et eventuelles sauvegardes sont conserves ailleurs.
+Les donnees de travail restent en session ; telecharger le JSON avant
+de fermer la session pour les conserver. Aucun secret dans le code.
+
+INSTALLATION WINDOWS
+Ouvrir le dossier terrebalance dans VS Code puis son terminal :
+  python -m pip install -r requirement.text
+  python -m streamlit run app.py
+Si un environnement virtuel est souhaite, le creer hors du dossier livre
+pour conserver les trois fichiers. Developpement avec Python 3.14 et
+Streamlit 1.65 ; utiliser une version compatible pour le deploiement.
+
+BIBLIOTHEQUES
+Streamlit : interface, formulaires et schema CCv2.
+NumPy : calculs vectorises et generateur aleatoire reproductible.
+pandas : tableaux, CSV et Excel. SciPy : loi triangulaire et IC binomial.
+Plotly : graphiques interactifs. openpyxl : classeurs Excel .xlsx.
+ReportLab : PDF avec tableaux et pagination. Matplotlib : figures PDF et
+polices Unicode integrees aux rapports. Les autres modules sont standards.
+
+PRISE EN MAIN
+Le projet est vide au lancement. Les valeurs proposees dans un formulaire
+ne sont pas des observations et ne sont pas appliquees automatiquement.
+Cliquer Charger l'exemple fictif pour le scenario de demonstration, ou
+renseigner les dimensions et cliquer Calculer la fouille.
+Un projet deja rempli n'est remplace qu'apres Autoriser le remplacement.
+La navigation comporte cinq onglets, sans page de connexion.
+Les exemples restent identifies comme fictifs apres modification.
+
+TERRASSEMENT
+Longueur L et largeur B : .01 a 1 000 m.
+Profondeur h : 0 a 100 m ; coefficient k : 1 a 3.
+Capacite utile C : .1 a 1 000 m3.
+Ces bornes sont des limites de saisie pedagogiques, pas des normes.
+V = L * B * h : volume en place.
+Vf = V * k : volume foisonne a transporter.
+Augmentation : Vf - V ; pourcentage : 100 * (k - 1).
+k = 1.20 signifie +20 %, pas +120 %. Aucun k n'est affecte a un sol.
+N = plafond(Vf / C) : nombre entier de voyages.
+Dernier chargement = Vf - (N - 1) * C si N > 0, sinon 0.
+Taux du dernier chargement = 100 * dernier / C.
+Si Vf est un multiple de C, le dernier chargement est plein.
+Si h = 0, tous les volumes et voyages sont nuls.
+La coupe utilise des echelles independantes pour L et h.
+Le plan conserve le rapport L/B ; les rapports extremes sont signales.
+Les schemas peuvent defiler dans leur propre zone sur petit ecran.
+
+PLUSIEURS FOUILLES
+Tableau editable : ajout/suppression de lignes puis Enregistrer les fouilles.
+Colonnes : identifiant,longueur_m,largeur_m,profondeur_m,foisonnement
+Identifiant non vide et unique, au plus 40 caracteres ; 100 fouilles maximum.
+Une seule capacite de benne pour le lot, independante de la fouille principale.
+Transport regroupe : plafond(somme(Vf_i) / C), chargements partages.
+Transport separe : somme(plafond(Vf_i / C)), aucun chargement partage.
+Le regroupement est une hypothese logistique, sans verification de melange
+des sols, d'acces ou de charge en tonnes.
+
+COMPARAISON
+Conserver L et B de la fouille principale ; modifier h, k et/ou C.
+Comparer les deux volumes, les voyages et le dernier chargement.
+La variante est une hypothese, pas une mesure supplementaire.
+Moins de voyages n'est pas une recommandation technique a lui seul.
+
+INCERTITUDES
+La profondeur suit une loi triangulaire : minimum <= mode <= maximum.
+Les trois valeurs sont comprises entre 0 et 100 m.
+Le mode n'est pas forcement la profondeur nominale de la fouille.
+Les autres parametres sont fixes ; l'incertitude de k n'est pas simulee.
+Tirages : 100 a 50 000. Graine : entier de 0 a 2 147 483 647.
+Une meme configuration et une meme graine reproduisent les tirages.
+Minimum = mode = maximum donne un cas deterministe, sans erreur de loi.
+P(N > n) est estimee par la proportion de tirages depassant la limite.
+La probabilite analytique est obtenue avec scipy.stats.triang.sf ; le
+seuil de profondeur correspond a la capacite de n voyages.
+La moyenne des voyages peut etre non entiere : chaque tirage est entier.
+Moyenne(plafond(Vf/C)) n'est pas necessairement plafond(moyenne(Vf)/C).
+Les quantiles P5/P50/P95 ne sont pas des garanties absolues.
+L'intervalle binomial Clopper-Pearson 95 % porte sur la probabilite estimee,
+pas sur les volumes. Il n'est pas affiche dans le cas deterministe.
+Si beaucoup de nombres de voyages distincts existent, les barres sont
+regroupees en classes pour garder un graphique lisible ; le CSV reste detaille.
+
+SEUILS NUMERIQUES
+Un rapport Vf/C a moins de huit ULP d'un entier strictement positif est
+ramene a cet entier pour eviter un voyage supplementaire artificiel.
+ULP = une unite de precision flottante locale ; pas un arrondi metrique.
+Un petit volume reellement positif n'est jamais ramene a zero.
+Le calcul analytique et le controle N > n suivent la meme convention.
+Ne pas prendre de decision a partir des nombres deja arrondis a l'ecran.
+
+DONNEES ET RAPPORT
+Tous les outils utilisent un seul projet enregistre. Les formulaires
+n'appliquent leurs valeurs qu'apres validation de leur bouton.
+Un changement invalide laisse le projet valide precedent intact.
+Des badges signalent les dimensions, variantes ou hypotheses modifiees
+mais non appliquees ; les resultats restent ceux de la configuration
+enregistree jusqu'au clic sur Calculer, Comparer ou Simuler.
+Recalculer la fouille principale invalide les anciens resultats de
+simulation et comparaison ; leurs reglages restent disponibles.
+Un PDF prepare ne reste telechargeable que pour sa configuration exacte.
+Les simulations sont mises en cache sur 6 configurations pendant 30 min ;
+les PDF sur 3 configurations. Le cache ne remplace pas une sauvegarde.
+
+Import CSV/Excel : maximum 2 Mo et 100 lignes. CSV UTF-8, virgule separatrice,
+point decimal. Les colonnes indiquees ci-dessus sont requises.
+Les identifiants comme 001 sont conserves comme texte.
+Le lot importe remplace seulement le lot ; les capacites sont conservees.
+Un import JSON restaure titre, origines, donnees, reglages et etats de calcul.
+Apercu et confirmation obligatoires avant remplacement.
+Les modeles telechargeables sont explicitement fictifs.
+Exports : lot CSV, classeur Excel avec feuilles de resultats, projet JSON,
+tirages CSV lorsque simules, rapport PDF lorsque des donnees existent.
+Les formules sont neutralisees dans les exports ; les identifiants qui
+commencent par =, +, - ou @ recoivent une apostrophe dans le CSV.
+PDF : cliquer Preparer le rapport PDF puis Telecharger le rapport PDF.
+Comparaison et simulation ne sont incluses que si elles sont actives.
+
+EXEMPLES FICTIFS POUR TESTER LES OUTILS
+1. Fouille : L=10 ; B=5 ; h=1 ; k=1.20 ; C=10 (metres et m3).
+   Attendus : V=50 m3 ; Vf=60 m3 ; augmentation=10 m3 (+20 %) ; N=6.
+   Six chargements pleins ; dernier=10 m3, remplissage=100 %.
+2. Meme fouille, C=8 : N=8 ; sept chargements pleins puis 4 m3 (50 %).
+3. h=0 : V=Vf=0 ; N=0 ; dernier=0, sans division invalide.
+4. Lot fictif : deux fouilles L=5 ; B=2 ; h=1 ; k=1.20, C=10.
+   Chacune : Vf=12 m3. Total=24 m3. Regroupe=3 ; separe=4 voyages.
+5. Comparaison : fouille du test 1 et variante h=1.20, k=1.20, C=10.
+   Variante : V=60 ; Vf=72 ; N=8 ; dernier=2 m3 (20 %).
+6. Incertitude : fouille du test 1 ; h min=.90, mode=1, max=1.10,
+   limite=6, N=10 000, graine=42. Vf compris entre 54 et 66 m3.
+   Six ou sept voyages ; probabilite analytique N>6 = 50 %.
+   Monte-Carlo doit s'en approcher sans etre force a donner 50 %.
+   Volume moyen theorique=60 m3 ; voyages moyens proches de 6.5.
+7. Profondeur constante min=mode=max=1 : Vf=60 ; voyages=6 ; risque=0.
+8. Rapport : exporter le JSON puis le reimporter, confirmer et appliquer.
+   Retrouver les parametres et les origines, puis verifier CSV/Excel/PDF.
+9. Dans Rapport > Methode et tests, executer les six tests de reference.
+
+PUBLICATION GITHUB ET STREAMLIT COMMUNITY CLOUD
+Conserver requirement.text dans le dossier livre.
+Cloud attend le nom standard requirements.txt ; requirement.text seul
+n'est pas reconnu automatiquement comme fichier de dependances.
+Preparer un AUTRE dossier a cote de terrebalance, depuis ce dossier :
+  New-Item -ItemType Directory -Path ..\terrebalance-deploiement
+  Copy-Item -LiteralPath app.py -Destination ..\terrebalance-deploiement\app.py
+  Copy-Item -LiteralPath README -Destination ..\terrebalance-deploiement\README
+  Copy-Item -LiteralPath requirement.text -Destination ..\terrebalance-deploiement\requirements.txt
+Cette copie de deploiement a trois fichiers et ne modifie pas le dossier livre.
+Creer un nouveau depot GitHub vide terrebalance, sans README automatique.
+Dans VS Code, ouvrir le dossier de deploiement, puis son terminal :
+  git init
+  git add .
+  git commit -m "Premiere version de TerreBalance"
+  git branch -M main
+  git remote add origin https://github.com/VOTRE_COMPTE/terrebalance.git
+  git remote -v
+  git push -u origin main
+Remplacer VOTRE_COMPTE. Ne pas modifier les depots des autres applications.
+Dans Streamlit Community Cloud : depot terrebalance, branche main, app.py.
+Dans Paste URL, indiquer le fichier Python :
+https://github.com/VOTRE_COMPTE/terrebalance/blob/main/app.py
+Choisir une version de Python compatible avec celle testee localement.
+Si un module manque, verifier requirements.txt et les journaux Manage app.
+Mises a jour, dans la copie de deploiement apres report des modifications :
+  git status
+  git add .
+  git commit -m "Amelioration de TerreBalance"
+  git push
+Ne publier aucun mot de passe, jeton ou secret.
+
+SOURCES TECHNIQUES
+Coefficient de foisonnement : convention multiplicatrice explicite de
+l'application, sans valeur de reference attribuee a un sol.
+https://help.autodesk.com/cloudhelp/2022/ENU/Civil3D-UserGuide/files/GUID-8F9B85F3-99A8-49B2-AB3D-BA9D786F81FC.htm
+Loi triangulaire :
+https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.triang.html
+Dependances Cloud :
+https://docs.streamlit.io/deploy/streamlit-community-cloud/deploy-your-app/app-dependencies
+
+VERIFICATIONS
+Les tests de developpement et captures restent hors du dossier livre.
+23 tests automatises reussis : calculs, limites, reproductibilite, imports,
+exports, conservation du projet valide et parametres en attente.
+Les cinq onglets ont ete testes dans le navigateur aux largeurs 1440,
+768, 390 et 320 pixels, sans debordement horizontal de la page.
+Les parcours CSV/Excel/JSON, les telechargements et l'invalidation d'un
+rapport perime ont ete verifies. Les PDF ont ete rendus et inspectes,
+y compris un rapport de 100 fouilles et une profondeur constante.
+La generation Excel est mise en cache sur 8 configurations pendant 30 min.
+Le deploiement sur votre compte Cloud, les essais terrain et la validation
+professionnelle ou reglementaire ne sont pas effectues par cette application.
